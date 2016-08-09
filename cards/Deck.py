@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from Card import Card
 from random import shuffle
@@ -66,7 +66,7 @@ class Deck:
         return(dealt)
 
 
-    def dealall(self, players:int):
+    def deal_all(self, players:int):
         """Deal all cards to players, maybe unevenly
 
         Returns list of lists of Cards"""
@@ -204,11 +204,11 @@ class TestDeck(unittest.TestCase):
                          "Ranks not correct")
 
 
-    def test_dealall(self):
+    def test_deal_all(self):
         cards = [Card(1), Card(2), Card(3), Card(4), Card(5), Card(6), Card(7), Card(8), Card(9), Card(10), Card(11), Card(12), Card(13)]
         deck  = Deck(cards)
 
-        dealt = deck.dealall(players=3)
+        dealt = deck.deal_all(players=3)
         player1 = dealt[0]
         player2 = dealt[1]
         player3 = dealt[2]
