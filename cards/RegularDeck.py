@@ -10,14 +10,11 @@ class RegularDeck(Deck):
                   icon=chr(ord("\N{PLAYING CARD ACE OF SPADES}")+s*16+r))
              for s in range(4) for r in range(13)]
 
-    # Unicode defines a "Knight" card between the Jack and Queen ranks, so adjust those icons
+    # Unicode defines a "Knight" card between Jack and Queen, so Queens and Kings
+    # have the wrong icon by the above generator. Adjusting:
 
     for s in range(4):
-        # Queen's icon got assigned to the Kings
-        CARDS[11+13*s].icon = CARDS[11+13*s+1].icon
-
-    for s in range(4):
-        # King's icon never got assigned
+        CARDS[11+13*s].icon = chr(ord("\N{PLAYING CARD QUEEN OF SPADES}")+s*16)
         CARDS[12+13*s].icon = chr(ord("\N{PLAYING CARD KING OF SPADES}")+s*16)
 
     RANK_ACE   = 1
