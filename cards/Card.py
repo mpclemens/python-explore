@@ -1,8 +1,8 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 class Card:
     """Represent a playing card and its state"""
-    
+
     def __init__(self, rank:int, suit:int=None, color:int=None, icon:str=None, back:str="\N{PLAYING CARD BACK}"):
         """Set up a new playing card, parameters are:
 
@@ -18,11 +18,11 @@ class Card:
         self.color = color
         self.icon = icon
         self.back = back
-                    
+
         self.hide()        # default display of card is face-down
         self.rotate(None)  # assuming no orientation
 
-        
+
     def show(self):
         """Present the front of the card"""
         self._hidden = False
@@ -33,11 +33,11 @@ class Card:
 
     def is_hidden(self):
         return(self._hidden)
-        
-    def rotate(self, rotation:int):
-        """Set the amount of rotation of the card. 
 
-        Intepretation of the value is left to a renderer, but 
+    def rotate(self, rotation:int):
+        """Set the amount of rotation of the card.
+
+        Intepretation of the value is left to a renderer, but
         suggested values are:
 
         0 = normal portrait orientation
@@ -48,13 +48,13 @@ class Card:
 
     def is_rotated(self):
         return(self._rotation is not None and self._rotation != 0)
-        
+
 ###
 
 import unittest
 
 class TestCard(unittest.TestCase):
-    
+
     def test_create(self):
         card = Card(3, 4, 5, "I", "B")
         self.assertEqual(card.rank,  3,  "Rank does not match")
@@ -78,7 +78,7 @@ class TestCard(unittest.TestCase):
         self.assertEqual(card.icon,  None, "Icon does not match")
         self.assertEqual(card.back, "\N{PLAYING CARD BACK}", "Back does not match")
 
-        
+
     def test_show_hide(self):
         card = Card(10)
         self.assertEqual(card.is_hidden(), True, "A new card is always hidden")
@@ -96,10 +96,6 @@ class TestCard(unittest.TestCase):
         self.assertEqual(card.is_rotated(), True,  "Rotation should be true")
         card.rotate(None)
         self.assertEqual(card.is_rotated(), False, "Rotation should have been cleared")
-    
+
 if __name__ == '__main__':
     unittest.main()
-
-
-
-    
