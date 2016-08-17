@@ -18,7 +18,12 @@ class Tree:
         If the tree has been drawn once before, then it will be
         overdrawn using the same points. Otherwise, create the tree
         and store the points of the segments in the `segments[]` list.
+
+        The optional parameters 'trunk' and 'max_depth' apply only to
+        new trees. Once segments have been stored, these values are
+        ignored.
         """
+        
         _restore_heading = my_turtle.heading()
         _restore_pos     = my_turtle.pos()
         _restore_pen     = my_turtle.pen()
@@ -30,38 +35,38 @@ class Tree:
 
         my_turtle.pendown()
         self._trunk = trunk
-        self._draw_segments(start_point = _restore_pos,
-                            my_turtle = my_turtle,
-                            iteration = 0,
-                            max_depth = max_depth,
-                            save_points = len(self.segments) == 0)
+
+        if (len(self.segments) > 0):
+            self._draw_saved(my_turtle)
+        else:
+            self._draw_new(start_point = _restore_pos,
+                           my_turtle = my_turtle,
+                           iteration = 0,
+                           max_depth = max_depth)
         my_turtle.penup()
 
         my_turtle.setheading(_restore_heading)
         my_turtle.setposition(_restore_pos)
         my_turtle.pen(_restore_pen)
 
-    def _draw_segments(self, my_turtle, start_point, iteration, max_depth, save_points):
-        """Helper method to draw the tree, either from new points or from
-        stored ones, until the segment bounding box is smaller than the
-        limit stored with the class"""
+    def _draw_new(self, my_turtle, start_point, iteration, max_depth):
+        """Helper method to recursively draw the tree down to a set depth"""
 
         if (iteration > max_depth):
             return;
                 
         if (iteration == 0):
             # Trunk, always draw
-            if (save_points):
-                self._points.add(start_point)
+            self._points.add(start_point)
             my_turtle.forward(self._trunk)
-            if (save_points):
-                self.segments.append((start_point, my_turtle.pos()))
-                self._points.add(my_turtle.pos())                
-            self._draw_segments(my_turtle = my_turtle,
-                                start_point = my_turtle.pos(),
-                                iteration = iteration+1,
-                                max_depth = max_depth,
-                                save_points = save_points)
+            
+            self.segments.append((start_point, my_turtle.pos()))
+            self._points.add(my_turtle.pos())                
+
+            self._draw_new(my_turtle = my_turtle,
+                           start_point = my_turtle.pos(),
+                           iteration = iteration+1,
+                           max_depth = max_depth)
             
         else:
             # Assuming the current branch (segment) is the middle of a
@@ -92,17 +97,32 @@ class Tree:
                     my_turtle.left(random.randint(min_angle,max_angle) * branch)
                     
                 my_turtle.forward(self._trunk/(iteration+1))
-                if (save_points):
-                    self.segments.append((start_point, my_turtle.pos()))
-                    self._points.add(my_turtle.pos())                
 
-                self._draw_segments(my_turtle = my_turtle,
-                                    start_point = my_turtle.pos(),
-                                    iteration = iteration+1,
-                                    max_depth = max_depth,
-                                    save_points = save_points)
+                self.segments.append((start_point, my_turtle.pos()))
+                self._points.add(my_turtle.pos())                
+
+                self._draw_new(my_turtle = my_turtle,
+                               start_point = my_turtle.pos(),
+                               iteration = iteration+1,
+                               max_depth = max_depth)
 
 
+    def _draw_saved(self, my_turtle):
+        """Helper method to re-draw a tree from stored segments"""
+
+        start_heading = my_turtle.heading()
+        start_pos     = my_turtle.pos()  # xxx needed?
+    
+        for (start,end) in sorted(self.segments):
+            my_turtle.penup()
+            my_turtle.setpos(start)
+            my_turtle.pendown()
+            my_turtle.setpos(end)
+
+        my_turtle.penup()
+        my_turtle.setheading(start_heading)
+        my_turtle.setpos(start_pos) # xxx needed?
+        
 ###
 
 import unittest
@@ -135,6 +155,21 @@ class TestTree(unittest.TestCase):
 
         self.assertTrue(len(my_tree.segments) > 0,"Some segments should be stored")
         
-    
+
+    def test_redraw(self):
+        """Just see if the tree draws over itself by using different pen sizes"""
+
+        my_turtle = Turtle()
+        my_turtle.pensize(5)
+        my_turtle.pencolor("black")
+        my_tree = Tree()
+        self.assertIsNone(my_tree.draw(my_turtle, max_depth = 2), "Drawing a fresh tree should return None")
+
+        my_turtle.pensize(2)
+        my_turtle.pencolor("white")
+        self.assertIsNone(my_tree.draw(my_turtle), "Redrawing a tree should return None")
+
+        
+        
 if (__name__ == "__main__"):
     unittest.main()
