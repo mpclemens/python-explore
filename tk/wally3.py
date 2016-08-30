@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+"""Exploring drawing walls and a background/floor for an interactive game"""
 
 import random
 import tkinter
@@ -48,9 +49,7 @@ def put_wall(canvas, x, y):
     canvas: reference to the Tk canvas
     x, y: game coords, which will be scaled for placement (0,0), (1,0), etc"""
 
-
-    # blocks are actually 2 px shorter, so pad 1 px from top left
-    canvas.create_image(x*WALLSIZE + 1, y*WALLSIZE + 1,
+    canvas.create_image(x*WALLSIZE, y*WALLSIZE,
                         image=random_wall(),
                         anchor=tkinter.NW)
 
