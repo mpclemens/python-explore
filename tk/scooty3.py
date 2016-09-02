@@ -1,36 +1,108 @@
 #!/usr/bin/env python3
 """Basic player control, wall/collision sensing, and goal reaching"""
 
-import random
-import tkinter
-import time
-
-ICONSIZE = 32            # pixel size for each game icon (sprite)
-TILESIZE = ICONSIZE * 2  # pixel size of the floor tiles
-SCALE = 20               # length & width of gameboard, in icon units
-
-# overall window sizing
-WIDTH = ICONSIZE * SCALE
-HEIGHT = ICONSIZE * SCALE
-
 ###
+
+class World:
+    
+    ICONSIZE = 32            # pixel size for each game icon (sprite)
+    TILESIZE = ICONSIZE * 2  # pixel size of the floor tiles
+    SCALE = 20               # length & width of gameboard, in icon units
+
+    # overall window sizing
+    WIDTH = ICONSIZE * SCALE
+    HEIGHT = ICONSIZE * SCALE
+
+    # icon containers, initialized lazily once the root Tk object is set up
+    FLOOR_TILES = []
+    GOAL_ICONS  = []
+    WALL_ICONS  = []
+    
+    def __init__(self):
+        self.root = tkinter.Tk()
+        self.canvas = tkinter.Canvas(self.root, width=World.WIDTH, height=World.HEIGHT)
+        self.canvas.pack()
+
+        if 0 == len(World.FLOOR_TILES):
+            World.FLOOR_TILES.append(tkinter.PhotoImage(file="./img/floor.gif"))
+
+        if 0 == len(World.GOAL_ICONS):
+            World.GOAL_ICONS.append(tkinter.PhotoImage(file="./img/goal.gif"))
+
+        if 0 == len(World.WALL_ICONS):
+            World.WALL_ICONS.append(tkinter.PhotoImage(file="./img/wall1.gif"))
+            World.WALL_ICONS.append(tkinter.PhotoImage(file="./img/wall2.gif"))
+            World.WALL_ICONS.append(tkinter.PhotoImage(file="./img/wall3.gif"))
+            World.WALL_ICONS.append(tkinter.PhotoImage(file="./img/wall4.gif"))
+            World.WALL_ICONS.append(tkinter.PhotoImage(file="./img/wall5.gif"))
+
+##
+
+class Level:
+
+    def __init__(self, world):
+        self.world = world
+        self.walls = set()
+        self.goals = set()
+
+    # floor tiling
+    def draw_floor(self, tile = 0):
+        """Draw the specified floor tile on the world's canvas"""
+        
+        for x in range(0, World.WIDTH, World.TILESIZE):
+            for y in range(0, World.HEIGHT, World.TILESIZE):
+                self.world.canvas.create_image(x, y,
+                                               image=World.FLOOR_TILES[tile],
+                                               anchor=tkinter.NW)
+
+    # wall drawing
+    def put_wall(self, x, y):
+        """Draw a wall at the game x,y and remember the location"""
+            
+        # Don't bother overdrawing existing walls
+        if (x,y) in self.walls:
+            return
+            
+        self.walls.add((x,y))
+        self.world.canvas.create_image(x*World.ICONSIZE, y*World.ICONSIZE,
+                                       image=random.choice(World.WALL_ICONS),
+                                       anchor=tkinter.NW)
+            
+    # goal drawing
+    def put_goal(self, x, y):
+        """Draw a goal at the game x,y and remember the location"""
+
+        # No goals allowed on walls
+        if (x,y) in self.walls:
+            return
+
+        # Don't overdraw existing goals
+        if (x,y) in self.goals:
+            return
+
+        self.goals.add((x,y))
+        self.world.canvas.create_image(x*World.ICONSIZE, y*World.ICONSIZE,
+                                       image=World.GOAL_ICONS[0],
+                                       anchor=tkinter.NW)
+        
+
+##
 
 class Player:
 
     import tkinter
-    import time
-    
+
     ICONS = {}
 
     # Used to decide how to turn the player
     DIRECTIONS = [tkinter.N, tkinter.NE, tkinter.E, tkinter.SE,
                   tkinter.S, tkinter.SW, tkinter.W, tkinter.NW]
     
-    def __init__(self, canvas):
+    def __init__(self, world):
         self.facing = tkinter.N
         self.x = 1
         self.y = 1
-        self.canvas = canvas
+        self.world = world
         
         # lazy init: when the class is defined, the Tk instance is not ready yet
         if len(Player.ICONS) == 0:
@@ -43,7 +115,7 @@ class Player:
             Player.ICONS[tkinter.W]  = tkinter.PhotoImage(file="./img/kelvin_w.gif")
             Player.ICONS[tkinter.NW] = tkinter.PhotoImage(file="./img/kelvin_nw.gif")
 
-        self._tk_id = self.canvas.create_image(self.x*ICONSIZE, self.y*ICONSIZE,
+        self._tk_id = self.world.canvas.create_image(self.x*World.ICONSIZE, self.y*World.ICONSIZE,
                                                image=Player.ICONS[self.facing],
                                                anchor=tkinter.NW)
             
@@ -86,22 +158,22 @@ class Player:
             time.sleep(0.1)
             current_index = (current_index + increment) % 8
             self.facing = Player.DIRECTIONS[current_index]
-            self.canvas.itemconfig(self._tk_id, image=Player.ICONS[self.facing])
+            self.world.canvas.itemconfig(self._tk_id, image=Player.ICONS[self.facing])
 
     def step_facing(self):
         """Move one step in the direction that the player is facing"""
 
         if self.facing == tkinter.N:
-            self.canvas.move(self._tk_id, 0, -ICONSIZE)
+            self.world.canvas.move(self._tk_id, 0, -World.ICONSIZE)
             self.y -= 1
         elif self.facing == tkinter.E:
-            self.canvas.move(self._tk_id, ICONSIZE, 0)
+            self.world.canvas.move(self._tk_id, World.ICONSIZE, 0)
             self.x += 1
         elif self.facing == tkinter.W:
-            self.canvas.move(self._tk_id, -ICONSIZE, 0)
+            self.world.canvas.move(self._tk_id, -World.ICONSIZE, 0)
             self.x -= 1
         elif self.facing == tkinter.S:
-            self.canvas.move(self._tk_id, 0, ICONSIZE)
+            self.world.canvas.move(self._tk_id, 0, World.ICONSIZE)
             self.y += 1
         else:
             # No diagonal moves allowed
@@ -131,96 +203,34 @@ class Player:
         
 ###
 
-tk = tkinter.Tk()
-world = tkinter.Canvas(tk, width=WIDTH, height=HEIGHT)
-world.pack()
+import tkinter
+import random
+import time
 
-#player = tkinter.Canvas(tk, width=ICONSIZE, height=ICONSIZE)
-#player.pack()
+world = World()
+tk = world.root # xxx replace with a world.refresh()-ish method later
 
-### Graphics init
-
-# lovely background
-floor = tkinter.PhotoImage(file="./img/floor.gif")
-
-# where to steer toward
-goal = tkinter.PhotoImage(file="./img/goal.gif")
-
-# randomly selected images when placing walls
-walls = []
-walls.append(tkinter.PhotoImage(file="./img/wall1.gif"))
-walls.append(tkinter.PhotoImage(file="./img/wall2.gif"))
-walls.append(tkinter.PhotoImage(file="./img/wall3.gif"))
-walls.append(tkinter.PhotoImage(file="./img/wall4.gif"))
-walls.append(tkinter.PhotoImage(file="./img/wall5.gif"))
-
-# remember the points where things exist, for collision detection
-barriers = set()
-goals = set()
-
-### Set up world
-
-# floor tiling
-def draw_floor(canvas):
-    """Params: (canvas)
-    
-    canvas: reference to the Tk canvas"""
-
-    for x in range(0,WIDTH,TILESIZE):
-        for y in range(0,HEIGHT,TILESIZE):
-            canvas.create_image(x, y,
-                                image=floor,
-                                anchor=tkinter.NW)
-
-# wall drawing
-def put_wall(canvas, x, y):
-    """Params: (canvas, x, y)
-    
-    canvas: reference to the Tk canvas
-    x, y: game coords, which will be scaled for placement (0,0), (1,0), etc"""
-
-    # Don't bother overdrawing existing walls
-    if (x,y) in barriers:
-        return
-
-    barriers.add((x,y))
-    canvas.create_image(x*ICONSIZE, y*ICONSIZE,
-                        image=random.choice(walls),
-                        anchor=tkinter.NW)
-
-# goal drawing
-def put_goal(canvas, x, y):
-    """Params: (canvas, x, y)
-    
-    canvas: reference to the Tk canvas
-    x, y: game coords, which will be scaled for placement (0,0), (1,0), etc"""
-
-    # Don't bother overdrawing existing goals
-    if (x,y) in goals:
-        return
-
-    goals.add((x,y))
-    canvas.create_image(x*ICONSIZE, y*ICONSIZE,
-                        image=goal,
-                        anchor=tkinter.NW)
-
-### main world
-    
-draw_floor(world)
+level = Level(world)    
+level.draw_floor()
 
 # outer box of walls
-for x in range(SCALE):
-    for y in [0,SCALE-1]:
-        put_wall(world, x, y)
-        put_wall(world, y, x)
+for x in range(World.SCALE):
+    for y in [0,World.SCALE-1]:
+        level.put_wall(x, y)
+        level.put_wall(y, x)
+
+# some interior walls
+
+for x in range(2,World.SCALE,3):
+    for y in range(2,World.SCALE,3):
+        level.put_wall(x, y)
+        level.put_wall(y, x)
 
 # goal in the bottom right
-put_goal(world,18,18)
+level.put_goal(18,18)
         
 p = Player(world)
 tk.update()
-
-# tkinter.mainloop()
 
 game_over = False
 
@@ -229,15 +239,14 @@ while not game_over:
     tk.update()
     time.sleep(0.1)
 
-    if (p.facing_point() in goals):
+    if (p.facing_point() in level.goals):
         p.step_facing()
         tk.update()
         game_over = True        
-    elif (p.facing_point() in barriers or
+    elif (p.facing_point() in level.walls or
           p.facing in [tkinter.NE, tkinter.SE, tkinter.SW, tkinter.NW]):
         p.turn_toward(random.choice(Player.DIRECTIONS))
-    elif (random.randint(0,100) > 80):
+    elif (random.randint(0,100) > 90):
         p.turn_toward(random.choice(Player.DIRECTIONS))
     else:        
         p.step_facing()
-
