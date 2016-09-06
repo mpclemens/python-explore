@@ -202,39 +202,38 @@ class Moveable:
 
         # Pick the shortest turn to face the new direction. The
         # DIRECTIONS array is set up as the consecutive directions to
-        # turn right. If the goal is more than four turns from the
+        # turn right. If the target is more than four turns from the
         # current direction, then wrap around the end of the array to
-        # reach the goal.
+        # reach the target.
         #
         # Example:
         # DIRECTIONS: [N, NE, E, SE, S, SW, W, NW]
         #
-        #
-        # If the character is facing N and wants to face SW, then the
-        # shortest route is counter-clockwise off the bottom of the list
-        # and wrapping to the top: N -> NW -> W -> SW
+        # If the moveable is facing N and wants to face SW, then the
+        # shortest route is counter-clockwise off the bottom of the
+        # list and wrapping to the top: N -> NW -> W -> SW
 
         current_index = Moveable.DIRECTIONS.index(self.facing)
-        goal_index  = Moveable.DIRECTIONS.index(direction)
+        target_index  = Moveable.DIRECTIONS.index(direction)
 
-        if (goal_index > current_index):
-            if (goal_index - current_index <= 4):
+        if (target_index > current_index):
+            if (target_index - current_index <= 4):
                 # clockwise turn
                 self._turn_until(current_index, direction, 1)
             else:
                 # counter-clockwise turn, off the low end of the array
                 self._turn_until(current_index, direction, -1)
         else:
-            if (current_index - goal_index <= 4):
+            if (current_index - target_index <= 4):
                 # counter-clockwise turn
                 self._turn_until(current_index, direction, -1)
             else:
                 # clockwise turn, off the high end of the array
                 self._turn_until(current_index, direction, -1)
             
-    def _turn_until(self, current_index, goal_direction, increment):
+    def _turn_until(self, current_index, target_direction, increment):
         """Animate the turn"""
-        while self.facing != goal_direction:
+        while self.facing != target_direction:
             time.sleep(0.1) # xxx replace with a call to refresh the world
             current_index = (current_index + increment) % 8
             self.facing = Moveable.DIRECTIONS[current_index]
@@ -243,7 +242,7 @@ class Moveable:
                 self.world.canvas.itemconfig(self.icon, image=self.icons[self.facing])
 
     def step_facing(self):
-        """Move one step in the direction that the player is facing"""
+        """Move one step in the current direction, if it is not diagonally"""
 
         if self.facing == self.world.N():
             self.world.canvas.move(self.icon, 0, -self.world.icon_size())
@@ -262,7 +261,7 @@ class Moveable:
             pass
 
     def facing_point(self):
-        """Return the coordinates of the block the player is facing"""
+        """Return the coordinates of the space the object is facing"""
 
         if self.facing == self.world.N():
             return((self.x, self.y-1))
