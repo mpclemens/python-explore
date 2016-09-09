@@ -38,9 +38,9 @@ class World:
             World.WALL_ICONS.append(self.init_image("./img/wall4.gif"))
             World.WALL_ICONS.append(self.init_image("./img/wall5.gif"))
 
-    def init_image(self,image_file):
+    def init_image(self,image_path):
         """Wrap the creation of an image so callers don't need to import tkinter"""
-        return tkinter.PhotoImage(file=image_file)
+        return tkinter.PhotoImage(file=image_path)
     
     # Accessors for class constants
 
@@ -162,103 +162,106 @@ class Level:
 
 import time
 
-class Player:
+class Moveable:
+    """Base class for icons on the lavel that can move, including players and enemies"""
 
-    # class constants are initialized lazily in __init__
-    #
-    DIRECTIONS = [] # ordered array of compass points (N, NE, etc.)
-    ICONS = {}      # stored per compass direction
-
-    # Used to decide how to turn the player
-
-    def __init__(self, world, x=1, y=1):
-        self.world = world
-
-        # lazy init: when the class is defined, the Tk instance is not ready yet
-        if len(Player.ICONS) == 0:
-            Player.ICONS[self.world.N()]  = self.world.init_image("./img/kelvin_n.gif")
-            Player.ICONS[self.world.NE()] = self.world.init_image("./img/kelvin_ne.gif")
-            Player.ICONS[self.world.E()]  = self.world.init_image("./img/kelvin_e.gif")
-            Player.ICONS[self.world.SE()] = self.world.init_image("./img/kelvin_se.gif")
-            Player.ICONS[self.world.S()]  = self.world.init_image("./img/kelvin_s.gif")
-            Player.ICONS[self.world.SW()] = self.world.init_image("./img/kelvin_sw.gif")
-            Player.ICONS[self.world.W()]  = self.world.init_image("./img/kelvin_w.gif")
-            Player.ICONS[self.world.NW()] = self.world.init_image("./img/kelvin_nw.gif")
-
-        if len(Player.DIRECTIONS) == 0:
-            Player.DIRECTIONS = [self.world.N(), self.world.NE(), self.world.E(), self.world.SE(),
-                                 self.world.S(), self.world.SW(), self.world.W(), self.world.NW()]
-
-        self.facing = Player.DIRECTIONS[0]
+    DIRECTIONS = [] # ordered list of compass points (N, NE, etc.)
+    
+    def __init__(self, world, icons, facing=None, x=None, y=None):
+        """Pass:
+        world:  reference to the global game world
+        icons:  a dictionary of initialized compass direction-keyed icons
+        facing: optional compass direction
+        x,y:    optional starting coordinates in world scheme (0,world.scale() - 1)
+        """
+        
+        self.world  = world
+        self.icons  = icons
+        self.facing = facing
         self.x = x
         self.y = y
 
-        self._img_id = self.world.canvas.create_image(x*self.world.icon_size(), y*self.world.icon_size(),
-                                                     image=Player.ICONS[self.facing],
-                                                     anchor=self.world.NW())
+        if len(Moveable.DIRECTIONS) == 0:
+            Moveable.DIRECTIONS = [world.N(), world.NE(), world.E(), world.SE(),
+                                   world.S(), world.SW(), world.W(), world.NW()]
 
-    def turn_toward(self,direction):
-        """Orient the player in the given direction, taking the fewest number of moves possible"""
+        if facing in icons.keys():
+            self.icon = world.canvas.create_image(x*world.icon_size(),
+                                                  y*world.icon_size(),
+                                                  image=icons[facing],
+                                                  anchor=world.NW())
 
-        if direction not in Player.DIRECTIONS:
+    def turn_toward(self, direction):
+        """Orient towards the given direction, cycling through the direction-indexed icons"""
+
+        if direction not in Moveable.DIRECTIONS:
             return
 
         if self.facing == direction:
             return
 
-        # try looking "up" the directions array for the goal: if
-        # it's 4 or less steps away from the current position, then
-        # stepping positively through the array is the proper choice,
-        # otherwise, step negatively "down" through the directions,
-        # wrapping at the ends as appropriate
+        # Pick the shortest turn to face the new direction. The
+        # DIRECTIONS array is set up as the consecutive directions to
+        # turn right. If the target is more than four turns from the
+        # current direction, then wrap around the end of the array to
+        # reach the target.
+        #
+        # Example:
+        # DIRECTIONS: [N, NE, E, SE, S, SW, W, NW]
+        #
+        # If the moveable is facing N and wants to face SW, then the
+        # shortest route is counter-clockwise off the bottom of the
+        # list and wrapping to the top: N -> NW -> W -> SW
 
-        current_index = Player.DIRECTIONS.index(self.facing)
-        goal_index  = Player.DIRECTIONS.index(direction)
+        current_index = Moveable.DIRECTIONS.index(self.facing)
+        target_index  = Moveable.DIRECTIONS.index(direction)
 
-        if (goal_index > current_index):
-            if (goal_index - current_index <= 4):
+        if (target_index > current_index):
+            if (target_index - current_index <= 4):
                 # clockwise turn
                 self._turn_until(current_index, direction, 1)
             else:
                 # counter-clockwise turn, off the low end of the array
                 self._turn_until(current_index, direction, -1)
         else:
-            if (current_index - goal_index <= 4):
+            if (current_index - target_index <= 4):
                 # counter-clockwise turn
                 self._turn_until(current_index, direction, -1)
             else:
                 # clockwise turn, off the high end of the array
                 self._turn_until(current_index, direction, -1)
-
-    def _turn_until(self,current_index, goal_direction, increment):
+            
+    def _turn_until(self, current_index, target_direction, increment):
         """Animate the turn"""
-        while self.facing != goal_direction:
+        while self.facing != target_direction:
             time.sleep(0.1) # xxx replace with a call to refresh the world
             current_index = (current_index + increment) % 8
-            self.facing = Player.DIRECTIONS[current_index]
-            self.world.canvas.itemconfig(self._img_id, image=Player.ICONS[self.facing])
+            self.facing = Moveable.DIRECTIONS[current_index]
+
+            if self.facing in self.icons.keys():
+                self.world.canvas.itemconfig(self.icon, image=self.icons[self.facing])
 
     def step_facing(self):
-        """Move one step in the direction that the player is facing"""
+        """Move one step in the current direction, if it is not diagonally"""
 
         if self.facing == self.world.N():
-            self.world.canvas.move(self._img_id, 0, -self.world.icon_size())
+            self.world.canvas.move(self.icon, 0, -self.world.icon_size())
             self.y -= 1
         elif self.facing == self.world.E():
-            self.world.canvas.move(self._img_id, self.world.icon_size(), 0)
+            self.world.canvas.move(self.icon, self.world.icon_size(), 0)
             self.x += 1
         elif self.facing == self.world.W():
-            self.world.canvas.move(self._img_id, -self.world.icon_size(), 0)
+            self.world.canvas.move(self.icon, -self.world.icon_size(), 0)
             self.x -= 1
         elif self.facing == self.world.S():
-            self.world.canvas.move(self._img_id, 0, self.world.icon_size())
+            self.world.canvas.move(self.icon, 0, self.world.icon_size())
             self.y += 1
         else:
             # No diagonal moves allowed
             pass
 
     def facing_point(self):
-        """Return the coordinates of the block the player is facing"""
+        """Return the coordinates of the space the object is facing"""
 
         if self.facing == self.world.N():
             return((self.x, self.y-1))
@@ -278,6 +281,37 @@ class Player:
             return((self.x-1, self.y-1))
         else:
             pass
+
+        
+##
+
+class Player(Moveable):
+
+    # class constants are initialized lazily in __init__
+    #
+    ICONS = {}      # stored per compass direction
+
+    # Used to decide how to turn the player
+
+    def __init__(self, world, x=1, y=1):
+
+        # lazy init: when the class is defined, the Tk instance is not ready yet
+        if len(Player.ICONS) == 0:
+            Player.ICONS[world.N()]  = world.init_image("./img/kelvin_n.gif")
+            Player.ICONS[world.NE()] = world.init_image("./img/kelvin_ne.gif")
+            Player.ICONS[world.E()]  = world.init_image("./img/kelvin_e.gif")
+            Player.ICONS[world.SE()] = world.init_image("./img/kelvin_se.gif")
+            Player.ICONS[world.S()]  = world.init_image("./img/kelvin_s.gif")
+            Player.ICONS[world.SW()] = world.init_image("./img/kelvin_sw.gif")
+            Player.ICONS[world.W()]  = world.init_image("./img/kelvin_w.gif")
+            Player.ICONS[world.NW()] = world.init_image("./img/kelvin_nw.gif")
+
+        self.icons = Player.ICONS
+        
+        super().__init__(world = world,
+                         x = x, y = y,
+                         facing = world.N(),
+                         icons = self.icons);
 
 ###
 
