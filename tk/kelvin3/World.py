@@ -102,3 +102,11 @@ class World:
     def NW(self):
         return tkinter.NW
 
+
+    # references to game objects in the world
+
+    def set_player(self, player):
+        self.player = player
+
+    def set_level(self, level):
+        self.level = level
