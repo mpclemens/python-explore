@@ -69,12 +69,13 @@ class Moveable:
                 self._turn_until(current_index, direction, -1)
             else:
                 # clockwise turn, off the high end of the array
-                self._turn_until(current_index, direction, -1)
+                self._turn_until(current_index, direction, 1)
             
     def _turn_until(self, current_index, target_direction, increment):
         """Animate the turn"""
         while self.facing != target_direction:
-            time.sleep(0.1) # xxx replace with a call to refresh the world
+            self.world.refresh()
+            time.sleep(0.10)
             current_index = (current_index + increment) % 8
             self.facing = Moveable.DIRECTIONS[current_index]
 
@@ -85,16 +86,24 @@ class Moveable:
         """Move one step in the current direction, if it is not diagonally"""
 
         if self.facing == self.world.N():
-            self.world.canvas.move(self.icon, 0, -self.world.icon_size())
+            for step in range(self.world.icon_size()):
+                self.world.canvas.move(self.icon, 0, -1)
+                self.world.refresh()
             self.y -= 1
         elif self.facing == self.world.E():
-            self.world.canvas.move(self.icon, self.world.icon_size(), 0)
+            for step in range(self.world.icon_size()):
+                self.world.canvas.move(self.icon, 1, 0)
+                self.world.refresh()
             self.x += 1
         elif self.facing == self.world.W():
-            self.world.canvas.move(self.icon, -self.world.icon_size(), 0)
+            for step in range(self.world.icon_size()):
+                self.world.canvas.move(self.icon, -1, 0)
+                self.world.refresh()
             self.x -= 1
         elif self.facing == self.world.S():
-            self.world.canvas.move(self.icon, 0, self.world.icon_size())
+            for step in range(self.world.icon_size()):
+                self.world.canvas.move(self.icon, 0, 1)
+                self.world.refresh()
             self.y += 1
         else:
             # No diagonal moves allowed

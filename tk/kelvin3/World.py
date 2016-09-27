@@ -41,6 +41,11 @@ class World:
     def init_image(self,image_path):
         """Wrap the creation of an image so callers don't need to import tkinter"""
         return tkinter.PhotoImage(file=image_path)
+
+    def refresh(self):
+        """Called by players and NPCs to update the (graphic) state of the world"""
+        self.root.update_idletasks()
+        self.root.update()
     
     # Accessors for class constants
 

@@ -33,13 +33,10 @@ for x in range(2, world.scale() ,3):
 level.put_goal(world.scale() - 2, world.scale() - 2)
 
 p = Player(world)
-tk.update() # xxx: world refresh() here
-
 game_over = False
 
 while not game_over:
-    tk.update_idletasks()
-    tk.update()
+    world.refresh()
     time.sleep(0.1)
 
     if ((p.x, p.y) in level.goals):
