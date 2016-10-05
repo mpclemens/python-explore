@@ -45,7 +45,7 @@ class World:
     def refresh(self):
         """Called by players and NPCs to update the (graphic) state of the world"""
         self.root.update_idletasks()
-        self.root.update()
+        # self.root.update() # not sure this adds any value
     
     # Accessors for class constants
 

@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-import time
-
 class Moveable:
     """Base class for icons on the lavel that can move, including players and enemies"""
 
@@ -75,58 +73,49 @@ class Moveable:
         """Animate the turn"""
         while self.facing != target_direction:
             self.world.refresh()
-            time.sleep(0.10)
             current_index = (current_index + increment) % 8
             self.facing = Moveable.DIRECTIONS[current_index]
 
             if self.facing in self.icons.keys():
                 self.world.canvas.itemconfig(self.icon, image=self.icons[self.facing])
 
-    def step_facing(self):
-        """Move one step in the current direction, if it is not diagonally"""
-
-        if self.facing == self.world.N():
-            for step in range(self.world.icon_size()):
-                self.world.canvas.move(self.icon, 0, -1)
-                self.world.refresh()
-            self.y -= 1
-        elif self.facing == self.world.E():
-            for step in range(self.world.icon_size()):
-                self.world.canvas.move(self.icon, 1, 0)
-                self.world.refresh()
-            self.x += 1
-        elif self.facing == self.world.W():
-            for step in range(self.world.icon_size()):
-                self.world.canvas.move(self.icon, -1, 0)
-                self.world.refresh()
-            self.x -= 1
-        elif self.facing == self.world.S():
-            for step in range(self.world.icon_size()):
-                self.world.canvas.move(self.icon, 0, 1)
-                self.world.refresh()
-            self.y += 1
-        else:
-            # No diagonal moves allowed
-            pass
-
     def facing_point(self):
-        """Return the coordinates of the space the object is facing"""
+        """Return the coordinate that the current instance is facing"""
 
-        if self.facing == self.world.N():
-            return((self.x, self.y-1))
-        elif self.facing == self.world.NE():
-            return((self.x+1, self.y-1))
-        elif self.facing == self.world.E():
-            return((self.x+1, self.y))
-        elif self.facing == self.world.SE():
-            return((self.x+1, self.y+1))
-        elif self.facing == self.world.S():
-            return((self.x, self.y+1))
-        elif self.facing == self.world.SW():
-            return((self.x-1, self.y+1))
-        elif self.facing == self.world.W():
-            return((self.x-1, self.y))
-        elif self.facing == self.world.NW():
-            return((self.x-1, self.y-1))
-        else:
-            pass
+        facing_x = self.x
+        facing_y = self.y
+
+        if self.facing in [self.world.NW(), self.world.W(), self.world.SW()]:
+            facing_x -= 1
+
+        if self.facing in [self.world.NE(), self.world.E(), self.world.SE()]:
+            facing_x += 1
+
+        if self.facing in [self.world.NW(), self.world.N(), self.world.NE()]:
+            facing_y -= 1
+
+        if self.facing in [self.world.SW(), self.world.S(), self.world.SE()]:
+            facing_y += 1
+
+        return (facing_x, facing_y)
+
+            
+    def step_facing(self):
+        """Move one step in the current direction, if it is not diagonally"""        
+
+        # diagonal steps are not allowed
+        if self.facing not in [self.world.N(), self.world.E(), self.world.S(), self.world.W()]:
+            return
+        
+        new_xy = (new_x, new_y) = self.facing_point()
+
+        if new_xy in self.world.level.walls:
+            return
+
+        for step in range(self.world.icon_size()):
+            self.world.canvas.move(self.icon, new_x - self.x, new_y - self.y)
+            self.world.refresh()
+
+        self.x = new_x
+        self.y = new_y
+

@@ -53,20 +53,16 @@ class Player(Moveable):
 
     def move_N(self, event):
         self.turn_toward(self.world.N())
-        if self.facing_point() not in self.world.level.walls:
-            self.step_facing()
+        self.step_facing()
 
     def move_E(self, event):
         self.turn_toward(self.world.E())
-        if self.facing_point() not in self.world.level.walls:
-            self.step_facing()
+        self.step_facing()
         
     def move_S(self, event):
         self.turn_toward(self.world.S())
-        if self.facing_point() not in self.world.level.walls:
-            self.step_facing()
+        self.step_facing()
 
     def move_W(self, event):
         self.turn_toward(self.world.W())
-        if self.facing_point() not in self.world.level.walls:
-            self.step_facing()
+        self.step_facing()
