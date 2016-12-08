@@ -107,8 +107,13 @@ def input_text(prompt_text):
 
 class Guessimal:
     """Prompt user for clues by walking the tree, and adding new nodes"""
+
     def __init__(self, file_name="guessimal.data"):
         """Begin a new game, loading from a file"""
+
+        self.previous_clue = None
+        self.previous_response = None
+
         self.data_file = file_name
         self.root_node = Node.load_tree(self.data_file)
 
@@ -121,41 +126,40 @@ class Guessimal:
             # but if it's the wrong one, then the tree gets extended
             if user_response == 'n':
 
-            print("""
+            #  self.add_clue(self, self.previous_clue, self.previous_response, current_node)
+            # ->
+            #  def add_clue(self, parent_node, parent_response, wrong_animal):
+
+
+                print("""
 OK, you stumped me. Tell me the animal you were thinking of so I can learn it.
 
 Be sure to add "a" or "an" in front of the animal's name, like "a giraffe"
 """)
 
-            animal_reply = 'n'
-            while animal_reply != 'y':
-                animal_text = input_text("Your animal is: ")
-                animal_reply = input_yes_no("Your animal is " + animal_text + ", is this OK?")
+                animal_reply = 'n'
+                while animal_reply != 'y':
+                    animal_text = input_text("Your animal is: ")
+                    animal_reply = input_yes_no("Your animal is " + animal_text + ", is this OK?")
 
-            print("Now I need to know what makes", animal_text, "different from", wrong_animal.text)
-            print("Please finish this clue:")
+                print("Teach me what makes %s different from %s" % (animal_text, current_node.text))
+                print("Please finish this clue:")
 
-            clue_reply = 'n'
-            while clue_reply != 'y':
-                clue_text = input_text(animal_text)
-                clue_reply = input_yes_no("The clue is: %s %s, is this OK?" % (animal_text, clue_text))
+                clue_reply = 'n'
+                while clue_reply != 'y':
+                    clue_text = input_text(animal_text)
+                    clue_reply = input_yes_no("The clue is: %s %s, is this OK?" % (animal_text, clue_text))
 
-                # Now set up a new node and hook it to the 'n' response of
-                # the parent: this is the path that led us to the bad
-                # guess
+                    # Now set up a new node and hook it to the 'n' response of
+                    # the parent: this is the path that led us to the bad
+                    # guess
 
-                #
-                # This has the side-effect of removing the pointer to wrong_animal from parent_node
-                new_clue = Node(clue_text, parent_node, parent_response)
+                    #
+                    # Replace the old animal leaf with a new clue node, with its own animal leaves...
+                    new_clue = Node(clue_text, self.previous_clue, self.previous_response)
+                    new_clue.set_child(current_node, 'n')
+                    Node(animal_text, new_clue, 'y')
 
-                # Hang the new animal as the 'y' leaf of the new clue...
-                Node(animal_text, new_clue, 'y')
-
-                # ...and shift the wrong animal to the clue 'n' leaf
-                new_clue.set_child(wrong_animal, 'n')
-
-                
-                self.add_clue(self.previous_clue, self.previous_response, current_node)
                 print("Thanks! I'm saving the clues for next time.")
                 self.root_node.save_tree(self.data_file)
             else:
@@ -170,10 +174,12 @@ Be sure to add "a" or "an" in front of the animal's name, like "a giraffe"
 
             self.process_node(current_node.get_child(user_response))
 
-
 ###
 
-# Main program
+def play_and_save():
+    """Play one round of the guessing-animal-game, and save on completion"""
+    game = Guessimal()
+    game.process_node(game.root_node)
 
-guessing_game = Guessimal()
-guessing_game.process_node(guessing_game.root_node)
+if __name__ == "__main__":
+    play_and_save()
